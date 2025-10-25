@@ -1,0 +1,11 @@
+{
+  "name": "js-starter",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "scripts": {
+    "dev": "nodemon index.js"
+  }
+}

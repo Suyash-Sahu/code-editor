@@ -61,7 +61,7 @@ const MainPlaygroundPage = () => {
   const { playgroundData, templateData, isLoading, error, saveTemplateData } =
     usePlayground(id);
 
-    const aiSuggestions = useAISuggestions();
+  const aiSuggestions = useAISuggestions();
 
   const {
     setTemplateData,
@@ -73,7 +73,6 @@ const MainPlaygroundPage = () => {
     closeFile,
     openFile,
     openFiles,
-
     handleAddFile,
     handleAddFolder,
     handleDeleteFile,
@@ -189,7 +188,7 @@ const MainPlaygroundPage = () => {
       if (!latestTemplateData) return
 
       try {
-            const filePath = findFilePath(fileToSave, latestTemplateData);
+        const filePath = findFilePath(fileToSave, latestTemplateData);
         if (!filePath) {
           toast.error(
             `Could not find path for file: ${fileToSave.filename}.${fileToSave.fileExtension}`
@@ -197,13 +196,13 @@ const MainPlaygroundPage = () => {
           return;
         }
 
-   const updatedTemplateData = JSON.parse(
+        const updatedTemplateData = JSON.parse(
           JSON.stringify(latestTemplateData)
         );
 
         // @ts-ignore
-          const updateFileContent = (items: any[]) =>
-            // @ts-ignore
+        const updateFileContent = (items: any[]) =>
+          // @ts-ignore
           items.map((item) => {
             if ("folderName" in item) {
               return { ...item, items: updateFileContent(item.items) };
@@ -219,18 +218,16 @@ const MainPlaygroundPage = () => {
           updatedTemplateData.items
         );
 
-          // Sync with WebContainer
+        // Sync with WebContainer
         if (writeFileSync) {
           await writeFileSync(filePath, fileToSave.content);
           lastSyncedContent.current.set(fileToSave.id, fileToSave.content);
-          if (instance && instance.fs) {
-            await instance.fs.writeFile(filePath, fileToSave.content);
-          }
         }
 
-           const newTemplateData = await saveTemplateData(updatedTemplateData);
-        setTemplateData(newTemplateData || updatedTemplateData);
-// Update open files
+        const newTemplateData = await saveTemplateData(updatedTemplateData);
+        setTemplateData(newTemplateData ?? updatedTemplateData);
+
+        // Update open files
         const updatedOpenFiles = openFiles.map((f) =>
           f.id === targetFileId
             ? {
@@ -243,11 +240,11 @@ const MainPlaygroundPage = () => {
         );
         setOpenFiles(updatedOpenFiles);
 
-    toast.success(
+        toast.success(
           `Saved ${fileToSave.filename}.${fileToSave.fileExtension}`
         );
       } catch (error) {
-         console.error("Error saving file:", error);
+        console.error("Error saving file:", error);
         toast.error(
           `Failed to save ${fileToSave.filename}.${fileToSave.fileExtension}`
         );
@@ -265,7 +262,7 @@ const MainPlaygroundPage = () => {
     ]
   );
 
-    const handleSaveAll = async () => {
+  const handleSaveAll = async () => {
     const unsavedFiles = openFiles.filter((f) => f.hasUnsavedChanges);
 
     if (unsavedFiles.length === 0) {
@@ -273,37 +270,50 @@ const MainPlaygroundPage = () => {
       return;
     }
 
+    const toastId = toast.loading(`Saving ${unsavedFiles.length} file(s)...`);
+    
     try {
-      await Promise.all(unsavedFiles.map((f) => handleSave(f.id)));
-      toast.success(`Saved ${unsavedFiles.length} file(s)`);
+      // Save files sequentially to avoid overwhelming the WebContainer
+      for (const file of unsavedFiles) {
+        await handleSave(file.id);
+      }
+      toast.success(`Saved ${unsavedFiles.length} file(s)`, { id: toastId });
     } catch (error) {
-      toast.error("Failed to save some files");
+      toast.error("Failed to save some files", { id: toastId });
     }
   };
 
-
-  useEffect(()=>{
-    const handleKeyDown = (e:KeyboardEvent)=>{
-      if(e.ctrlKey && e.key === "s"){
-        e.preventDefault()
-        handleSave()
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+        handleSave();
       }
-    }
-     window.addEventListener("keydown", handleKeyDown);
-     return () => window.removeEventListener("keydown", handleKeyDown);
-  },[handleSave]);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSave]);
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
-        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-        <h2 className="text-xl font-semibold text-red-600 mb-2">
-          Something went wrong
-        </h2>
-        <p className="text-gray-600 mb-4">{error}</p>
-        <Button onClick={() => window.location.reload()} variant="destructive">
-          Try Again
-        </Button>
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 via-red-400/20 to-red-500/20 blur-3xl"></div>
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="p-4 rounded-full bg-red-500/10 dark:bg-red-500/20 mb-4">
+              <AlertCircle className="h-12 w-12 text-red-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
+              Something went wrong
+            </h2>
+            <p className="text-[#256DA4] dark:text-[#83B7DE] mb-4 text-center max-w-md">
+              {error}
+            </p>
+            <Button onClick={() => window.location.reload()} variant="destructive">
+              Try Again
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -312,8 +322,8 @@ const MainPlaygroundPage = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
-        <div className="w-full max-w-md p-6 rounded-lg shadow-sm border">
-          <h2 className="text-xl font-semibold mb-6 text-center">
+        <div className="w-full max-w-md p-6 rounded-lg shadow-lg border border-[#83B7DE]/20 dark:border-[#74FF9E]/20 bg-gradient-to-br from-white to-[#83B7DE]/5 dark:from-zinc-900 dark:to-[#74FF9E]/5">
+          <h2 className="text-xl font-semibold mb-6 text-center bg-gradient-to-r from-[#256DA4] via-[#83B7DE] to-[#74FF9E] dark:from-[#83B7DE] dark:via-[#74FF9E] dark:to-[#F2FF58] bg-clip-text text-transparent">
             Loading Playground
           </h2>
           <div className="mb-8">
@@ -338,13 +348,20 @@ const MainPlaygroundPage = () => {
   if (!templateData) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
-        <FolderOpen className="h-12 w-12 text-amber-500 mb-4" />
-        <h2 className="text-xl font-semibold text-amber-600 mb-2">
-          No template data available
-        </h2>
-        <Button onClick={() => window.location.reload()} variant="outline">
-          Reload Template
-        </Button>
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#ABB900]/20 via-[#DAE039]/20 to-[#F2FF58]/20 blur-3xl"></div>
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="p-4 rounded-full bg-[#ABB900]/10 dark:bg-[#F2FF58]/20 mb-4">
+              <FolderOpen className="h-12 w-12 text-[#ABB900] dark:text-[#F2FF58]" />
+            </div>
+            <h2 className="text-xl font-semibold text-[#ABB900] dark:text-[#F2FF58] mb-2">
+              No template data available
+            </h2>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Reload Template
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -365,34 +382,41 @@ const MainPlaygroundPage = () => {
           onRenameFolder={wrappedHandleRenameFolder}
         />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-[#83B7DE]/20 dark:border-[#74FF9E]/20 px-4 bg-gradient-to-r from-white via-[#83B7DE]/5 to-white dark:from-zinc-950 dark:via-[#74FF9E]/5 dark:to-zinc-950">
+            <SidebarTrigger className="-ml-1 text-[#256DA4] dark:text-[#83B7DE] hover:text-[#83B7DE] dark:hover:text-[#74FF9E]" />
+            <Separator orientation="vertical" className="mr-2 h-4 bg-[#83B7DE]/30 dark:bg-[#74FF9E]/30" />
 
             <div className="flex flex-1 items-center gap-2">
               <div className="flex flex-col flex-1">
-                <h1 className="text-sm font-medium">
+                <h1 className="text-sm font-semibold bg-gradient-to-r from-[#256DA4] to-[#83B7DE] dark:from-[#83B7DE] dark:to-[#74FF9E] bg-clip-text text-transparent">
                   {playgroundData?.title || "Code Playground"}
                 </h1>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[#256DA4]/70 dark:text-[#83B7DE]/70">
                   {openFiles.length} File(s) Open
-                  {hasUnsavedChanges && " • Unsaved changes"}
+                  {hasUnsavedChanges && (
+                    <span className="text-[#DAE039] dark:text-[#F2FF58]">
+                      {" "}• Unsaved changes
+                    </span>
+                  )}
                 </p>
               </div>
 
               <div className="flex items-center gap-1">
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger asChild>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleSave()}
                       disabled={!activeFile || !activeFile.hasUnsavedChanges}
+                      className="border-[#83B7DE]/30 dark:border-[#74FF9E]/30 hover:bg-[#83B7DE]/10 dark:hover:bg-[#74FF9E]/10 hover:border-[#83B7DE] dark:hover:border-[#74FF9E]"
                     >
-                      <Save className="h-4 w-4" />
+                      <Save className="h-4 w-4 text-[#256DA4] dark:text-[#83B7DE]" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Save (Ctrl+S)</TooltipContent>
+                  <TooltipContent className="bg-[#256DA4] dark:bg-[#74FF9E] text-white dark:text-black border-none">
+                    Save (Ctrl+S)
+                  </TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
@@ -402,33 +426,45 @@ const MainPlaygroundPage = () => {
                       variant="outline"
                       onClick={handleSaveAll}
                       disabled={!hasUnsavedChanges}
+                      className="border-[#83B7DE]/30 dark:border-[#74FF9E]/30 hover:bg-[#83B7DE]/10 dark:hover:bg-[#74FF9E]/10 hover:border-[#83B7DE] dark:hover:border-[#74FF9E]"
                     >
-                      <Save className="h-4 w-4" /> All
+                      <Save className="h-4 w-4 text-[#256DA4] dark:text-[#83B7DE]" /> 
+                      <span className="text-[#256DA4] dark:text-[#83B7DE]">All</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Save All (Ctrl+Shift+S)</TooltipContent>
+                  <TooltipContent className="bg-[#256DA4] dark:bg-[#74FF9E] text-white dark:text-black border-none">
+                    Save All (Ctrl+Shift+S)
+                  </TooltipContent>
                 </Tooltip>
 
-               <ToggleAI
-                isEnabled={aiSuggestions.isEnabled}
-                onToggle={aiSuggestions.toggleEnabled}
-                suggestionLoading={aiSuggestions.isLoading}
-               />
+                <ToggleAI
+                  isEnabled={aiSuggestions.isEnabled}
+                  onToggle={aiSuggestions.toggleEnabled}
+                  suggestionLoading={aiSuggestions.isLoading}
+                />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline">
-                      <Settings className="h-4 w-4" />
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="border-[#83B7DE]/30 dark:border-[#74FF9E]/30 hover:bg-[#83B7DE]/10 dark:hover:bg-[#74FF9E]/10 hover:border-[#83B7DE] dark:hover:border-[#74FF9E]"
+                    >
+                      <Settings className="h-4 w-4 text-[#256DA4] dark:text-[#83B7DE]" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="border-[#83B7DE]/20 dark:border-[#74FF9E]/20">
                     <DropdownMenuItem
                       onClick={() => setIsPreviewVisible(!isPreviewVisible)}
+                      className="text-[#256DA4] dark:text-[#83B7DE] focus:bg-[#83B7DE]/10 dark:focus:bg-[#74FF9E]/10 focus:text-[#256DA4] dark:focus:text-[#74FF9E]"
                     >
                       {isPreviewVisible ? "Hide" : "Show"} Preview
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={closeAllFiles}>
+                    <DropdownMenuSeparator className="bg-[#83B7DE]/20 dark:bg-[#74FF9E]/20" />
+                    <DropdownMenuItem 
+                      onClick={closeAllFiles}
+                      className="text-[#256DA4] dark:text-[#83B7DE] focus:bg-[#83B7DE]/10 dark:focus:bg-[#74FF9E]/10 focus:text-[#256DA4] dark:focus:text-[#74FF9E]"
+                    >
                       Close All Files
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -440,7 +476,7 @@ const MainPlaygroundPage = () => {
           <div className="h-[calc(100vh-4rem)]">
             {openFiles.length > 0 ? (
               <div className="h-full flex flex-col">
-                <div className="border-b bg-muted/30">
+                <div className="border-b border-[#83B7DE]/20 dark:border-[#74FF9E]/20 bg-gradient-to-r from-white via-[#83B7DE]/5 to-white dark:from-zinc-950 dark:via-[#74FF9E]/5 dark:to-zinc-950">
                   <Tabs
                     value={activeFileId || ""}
                     onValueChange={setActiveFileId}
@@ -451,15 +487,15 @@ const MainPlaygroundPage = () => {
                           <TabsTrigger
                             key={file.id}
                             value={file.id}
-                            className="relative h-8 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm group"
+                            className="relative h-8 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#83B7DE]/10 data-[state=active]:to-[#74FF9E]/10 dark:data-[state=active]:from-[#83B7DE]/20 dark:data-[state=active]:to-[#74FF9E]/20 data-[state=active]:border-b-2 data-[state=active]:border-[#83B7DE] dark:data-[state=active]:border-[#74FF9E] data-[state=active]:shadow-sm group transition-all duration-200"
                           >
                             <div className="flex items-center gap-2">
-                              <FileText className="h-3 w-3" />
-                              <span>
+                              <FileText className="h-3 w-3 text-[#256DA4] dark:text-[#83B7DE] group-data-[state=active]:text-[#83B7DE] dark:group-data-[state=active]:text-[#74FF9E]" />
+                              <span className="text-[#256DA4] dark:text-[#83B7DE] group-data-[state=active]:text-[#256DA4] dark:group-data-[state=active]:text-[#74FF9E] group-data-[state=active]:font-medium">
                                 {file.filename}.{file.fileExtension}
                               </span>
                               {file.hasUnsavedChanges && (
-                                <span className="h-2 w-2 rounded-full bg-orange-500" />
+                                <span className="h-2 w-2 rounded-full bg-[#DAE039] dark:bg-[#F2FF58] animate-pulse" />
                               )}
                               <span
                                 className="ml-2 h-4 w-4 hover:bg-destructive hover:text-destructive-foreground rounded-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -480,7 +516,7 @@ const MainPlaygroundPage = () => {
                           size="sm"
                           variant="ghost"
                           onClick={closeAllFiles}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs text-[#256DA4] dark:text-[#83B7DE] hover:text-[#83B7DE] dark:hover:text-[#74FF9E] hover:bg-[#83B7DE]/10 dark:hover:bg-[#74FF9E]/10"
                         >
                           Close All
                         </Button>
@@ -498,14 +534,13 @@ const MainPlaygroundPage = () => {
                         activeFile={activeFile}
                         content={activeFile?.content || ""}
                         onContentChange={(value) => 
-                          activeFileId && updateFileContent(activeFileId , value)
+                          activeFileId && updateFileContent(activeFileId, value)
                         }
                         suggestion={aiSuggestions.suggestion}
                         suggestionLoading={aiSuggestions.isLoading}
                         suggestionPosition={aiSuggestions.position}
-                        onAcceptSuggestion={(editor , monaco)=>aiSuggestions.acceptSuggestion(editor , monaco)}
-
-                          onRejectSuggestion={(editor) =>
+                        onAcceptSuggestion={(editor, monaco) => aiSuggestions.acceptSuggestion(editor, monaco)}
+                        onRejectSuggestion={(editor) =>
                           aiSuggestions.rejectSuggestion(editor)
                         }
                         onTriggerSuggestion={(type, editor) =>
@@ -516,7 +551,7 @@ const MainPlaygroundPage = () => {
 
                     {isPreviewVisible && (
                       <>
-                        <ResizableHandle />
+                        <ResizableHandle className="bg-[#83B7DE]/20 dark:bg-[#74FF9E]/20 hover:bg-[#83B7DE]/40 dark:hover:bg-[#74FF9E]/40" />
                         <ResizablePanel defaultSize={50}>
                           <WebContainerPreview
                             templateData={templateData}
@@ -534,13 +569,22 @@ const MainPlaygroundPage = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col h-full items-center justify-center text-muted-foreground gap-4">
-                <FileText className="h-16 w-16 text-gray-300" />
-                <div className="text-center">
-                  <p className="text-lg font-medium">No files open</p>
-                  <p className="text-sm text-gray-500">
-                    Select a file from the sidebar to start editing
-                  </p>
+              <div className="flex flex-col h-full items-center justify-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#83B7DE]/20 via-[#74FF9E]/20 to-[#F2FF58]/20 blur-3xl"></div>
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="p-6 rounded-full bg-[#83B7DE]/10 dark:bg-[#74FF9E]/10 mb-4">
+                      <FileText className="h-16 w-16 text-[#83B7DE] dark:text-[#74FF9E]" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-semibold text-[#256DA4] dark:text-[#83B7DE] mb-2">
+                        No files open
+                      </p>
+                      <p className="text-sm text-[#256DA4]/70 dark:text-[#83B7DE]/70">
+                        Select a file from the sidebar to start editing
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

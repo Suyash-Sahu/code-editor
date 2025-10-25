@@ -5,7 +5,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "dev": "nodemon index.ts"
   },
   "dependencies": {
     "@types/react": "^18.2.21",
@@ -15,7 +16,8 @@
   },
   "devDependencies": {
     "react-scripts": "^5.0.1",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "nodemon": "^3.0.1"
   },
   "browserslist": [
     "defaults"

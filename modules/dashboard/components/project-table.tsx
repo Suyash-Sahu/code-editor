@@ -160,13 +160,13 @@ export default function ProjectTable({
                 <TableCell className="font-medium">
                   <div className="flex flex-col">
                     <Link href={`/playground/${project.id}`} className="hover:underline">
-                      <span className="font-semibold">{project.title}</span>
+                      <span className="font-semibold bg-gradient-to-r from-[#256DA4] to-[#83B7DE] bg-clip-text text-transparent">{project.title}</span>
                     </Link>
                     <span className="text-sm text-gray-500 line-clamp-1">{project.description}</span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="bg-[#E93F3F15] text-[#E93F3F] border-[#E93F3F]">
+                  <Badge variant="outline" className="bg-gradient-to-r from-[#256DA4]/15 to-[#83B7DE]/15 text-[#256DA4] border-[#83B7DE]">
                     {project.template}
                   </Badge>
                 </TableCell>

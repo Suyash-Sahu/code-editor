@@ -26,7 +26,7 @@ import {
   Plus,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // TemplateSelectionModal.tsx
 type TemplateSelectionModalProps = {
@@ -141,6 +141,7 @@ const TemplateSelectionModal = ({
   onClose,
   onSubmit,
 }: TemplateSelectionModalProps) => {
+  const [isClient, setIsClient] = useState(false);
   const [step, setStep] = useState<"select" | "configure">("select");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -149,7 +150,16 @@ const TemplateSelectionModal = ({
   >("all");
   const [projectName, setProjectName] = useState("");
 
-const filteredTemplates= templates.filter((template)=>{
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Don't render on server
+  if (!isClient) {
+    return null;
+  }
+
+  const filteredTemplates= templates.filter((template)=>{
 
     const matchesSearch=
     template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -188,10 +198,21 @@ const filteredTemplates= templates.filter((template)=>{
 
       const template = templates.find((t) => t.id === selectedTemplate);
       
+      if (!template) {
+        console.error("Template not found for id:", selectedTemplate);
+        return;
+      }
+
+      const templateType = templateMap[selectedTemplate];
+      if (!templateType) {
+        console.error("Template type not found for id:", selectedTemplate);
+        return;
+      }
+
       onSubmit ({
-        title:projectName || `new ${template?.name} Project`,
-        template:templateMap[selectedTemplate] || "REACT",
-        description:template?.description
+        title:projectName || `new ${template.name} Project`,
+        template: templateType,
+        description:template.description
       })
      
       onClose();
@@ -237,8 +258,8 @@ const filteredTemplates= templates.filter((template)=>{
         {step === "select" ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#e93f3f] flex items-center gap-2">
-                <Plus size={24} className="text-[#e93f3f]" />
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-[#256DA4] to-[#83B7DE] bg-clip-text text-transparent flex items-center gap-2">
+                <Plus size={24} className="text-[#256DA4]" />
                 Select a Template
               </DialogTitle>
               <DialogDescription>
@@ -287,8 +308,8 @@ const filteredTemplates= templates.filter((template)=>{
                         className={`relative flex p-6 border rounded-lg cursor-pointer transition-all duration-300 hover:scale-[1.02]
                             ${
                             selectedTemplate === template.id
-                              ? "border-[#E93F3F]  shadow-[0_0_0_1px_#E93F3F,0_8px_20px_rgba(233,63,63,0.15)]"
-                              : "hover:border-[#E93F3F] shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.1)]"
+                              ? "border-[#256DA4]  shadow-[0_0_0_1px_#256DA4,0_8px_20px_rgba(37,109,164,0.15)]"
+                              : "hover:border-[#256DA4] shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.1)]"
                           }
                             `}
                         onClick={() => handleSelectTemplate(template.id)}
@@ -298,7 +319,7 @@ const filteredTemplates= templates.filter((template)=>{
                         </div>
 
                         {selectedTemplate === template.id && (
-                          <div className="absolute top-2 left-2 bg-[#E93F3F] text-white rounded-full p-1">
+                          <div className="absolute top-2 left-2 bg-[#256DA4] text-white rounded-full p-1">
                             <Check size={14} />
                           </div>
                         )}
@@ -393,7 +414,7 @@ const filteredTemplates= templates.filter((template)=>{
                   Cancel
                 </Button>
                 <Button
-                  className="bg-[#E93F3F] hover:bg-[#d03636] text-white"
+                  className="bg-gradient-to-r from-[#256DA4] to-[#83B7DE] hover:from-[#1e5a8a] hover:to-[#6ca5c7] text-white"
                   disabled={!selectedTemplate}
                   onClick={handleContinue}
                 >
@@ -405,7 +426,7 @@ const filteredTemplates= templates.filter((template)=>{
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#e93f3f]">
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-[#256DA4] to-[#83B7DE] bg-clip-text text-transparent">
                 Configure Your Project
               </DialogTitle>
               <DialogDescription>
@@ -425,14 +446,14 @@ const filteredTemplates= templates.filter((template)=>{
                 />
               </div>
 
-              <div className="p-4 shadow-[0_0_0_1px_#E93F3F,0_8px_20px_rgba(233,63,63,0.15)] rounded-lg border">
+              <div className="p-4 shadow-[0_0_0_1px_#256DA4,0_8px_20px_rgba(37,109,164,0.15)] rounded-lg border">
                 <h3 className="font-medium mb-2">Selected Template Features</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {templates
                     .find((t) => t.id === selectedTemplate)
                     ?.features.map((feature) => (
                       <div key={feature} className="flex items-center gap-2">
-                        <Zap size={14} className="text-[#E93F3F]" />
+                        <Zap size={14} className="text-[#256DA4]" />
                         <span className="text-sm">{feature}</span>
                       </div>
                     ))}
@@ -445,7 +466,7 @@ const filteredTemplates= templates.filter((template)=>{
                 Back
               </Button>
               <Button
-                className="bg-[#E93F3F] hover:bg-[#d03636] text-white"
+                className="bg-gradient-to-r from-[#256DA4] to-[#83B7DE] hover:from-[#1e5a8a] hover:to-[#6ca5c7] text-white"
                 onClick={handleCreateProject}
               >
                 Create Project

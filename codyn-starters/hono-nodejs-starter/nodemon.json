@@ -1,0 +1,7 @@
+{
+  "watch": ["src/", "!node_modules", "!*.log"],
+  "ext": "ts,js,json,html,css",
+  "ignore": ["node_modules/", "*.log", ".git"],
+  "delay": "300",
+  "verbose": false
+}

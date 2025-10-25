@@ -18,15 +18,15 @@ export function ThemeToggle() {
 
   return (
     <div
-      className="cursor-pointer"
+      className="cursor-pointer transition-all duration-300 ease-in-out hover:scale-110"
       onClick={() => {
         setTheme(theme === "light" ? "dark" : "light");
       }}
     >
       {theme === "light" ? (
-        <Moon className="h-5 w-5 text-black" />
+        <Moon className="h-5 w-5 text-black hover:text-[#256DA4]" />
       ) : (
-        <Sun className="h-5 w-5 text-white" color="white" />
+        <Sun className="h-5 w-5 text-white hover:text-[#74FF9E]" />
       )}
     </div>
   );
